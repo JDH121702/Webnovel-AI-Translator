@@ -55,7 +55,7 @@ This project provides a complete solution for translating Syosetu webnovel chapt
 
 1. **Headers**: Headers for each new chapter.
 2. **Better Scraping so it can be used on any website**: Better scraping to be used more generally.
-3. **More Lanugages**: Support for translating too more languages.
+3. **More Lanugages**: Support for translating to more languages.
 
 ## Contributing
 

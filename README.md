@@ -13,8 +13,8 @@ This project provides a complete solution for translating Syosetu webnovel chapt
 
 1. **Clone the repository**:
     ```sh
-    git clone https://github.com/yourusername/your-repo.git
-    cd your-repo
+    git clone https://github.com/JDH121702/Soyetsu-Webnovel-AI-Translator
+    cd Soyetsu-Webnovel-AI-Translator
     ```
 
 2. **Create and activate a virtual environment**:

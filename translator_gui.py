@@ -33,6 +33,8 @@ class TranslatorApp(tk.Tk):
         self.style.configure("TProgressbar", thickness=20)
 
         self.chapter_urls = []
+        self.chapter_titles = []
+        self.selected_chapters = []
         self.cover_image_path = tk.StringVar()
         self.create_widgets()
 
@@ -88,18 +90,29 @@ class TranslatorApp(tk.Tk):
         self.chapters_count_label = ttk.Label(frame, text="", font=("Helvetica", 10))
         self.chapters_count_label.grid(row=7, column=0, columnspan=2, pady=10)
 
-        # Number of Chapters to Translate
-        ttk.Label(frame, text="Number of Chapters to Translate:", anchor="e").grid(row=8, column=0, padx=10, pady=10, sticky="e")
-        self.num_chapters_entry = ttk.Entry(frame, width=10)
-        self.num_chapters_entry.grid(row=8, column=1, padx=10, pady=10, sticky="w")
+        # Chapter Selection Frame
+        self.chapter_selection_frame = ttk.Frame(self, padding="10 10 10 10", style="TFrame")
+        self.chapter_selection_frame.grid(row=1, column=0, sticky="nsew")
+        self.chapter_selection_frame.columnconfigure(0, weight=1)
+        self.chapter_selection_frame.rowconfigure(0, weight=1)
 
-        # Progress Bar
-        self.progress = ttk.Progressbar(frame, orient="horizontal", length=400, mode="determinate", style="TProgressbar")
-        self.progress.grid(row=9, column=0, columnspan=2, padx=10, pady=20)
+        self.chapter_listbox = tk.Listbox(self.chapter_selection_frame, selectmode=tk.MULTIPLE, width=50, height=20)
+        self.chapter_listbox.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        chapter_listbox_scrollbar = ttk.Scrollbar(self.chapter_selection_frame, orient=tk.VERTICAL, command=self.chapter_listbox.yview)
+        chapter_listbox_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.chapter_listbox.config(yscrollcommand=chapter_listbox_scrollbar.set)
+
+        # Select/Deselect All Buttons
+        self.select_all_button = ttk.Button(self.chapter_selection_frame, text="Select All", command=self.select_all_chapters)
+        self.select_all_button.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        self.deselect_all_button = ttk.Button(self.chapter_selection_frame, text="Deselect All", command=self.deselect_all_chapters)
+        self.deselect_all_button.grid(row=1, column=0, padx=5, pady=5, sticky="e")
 
         # Translate Button
-        self.translate_button = ttk.Button(frame, text="Translate", command=self.start_translation, state=tk.DISABLED)
-        self.translate_button.grid(row=10, column=0, columnspan=2, pady=10)
+        self.translate_button = ttk.Button(self, text="Translate", command=self.start_translation, state=tk.DISABLED)
+        self.translate_button.grid(row=2, column=0, columnspan=2, pady=10)
 
         for child in frame.winfo_children():
             child.grid_configure(padx=10, pady=5)
@@ -122,7 +135,10 @@ class TranslatorApp(tk.Tk):
             return
 
         try:
-            self.chapter_urls = get_chapter_urls(novel_url)
+            chapters = get_chapter_urls(novel_url)
+            self.chapter_urls = [url for url, _ in chapters]
+            self.chapter_titles = [title for _, title in chapters]
+            self.update_chapter_listbox()
             chapters_count = len(self.chapter_urls)
             self.chapters_count_label.config(text=f"Chapters Grabbed: {chapters_count}")
 
@@ -134,31 +150,46 @@ class TranslatorApp(tk.Tk):
             logging.error("Error while grabbing chapters: %s", e)
             messagebox.showerror("Error", f"An error occurred while grabbing chapters: {e}")
 
+    def update_chapter_listbox(self):
+        self.chapter_listbox.delete(0, tk.END)
+        for title in self.chapter_titles:
+            self.chapter_listbox.insert(tk.END, title)
+        for i in range(len(self.chapter_titles)):
+            self.chapter_listbox.select_set(i)
+
+    def select_all_chapters(self):
+        self.chapter_listbox.select_set(0, tk.END)
+
+    def deselect_all_chapters(self):
+        self.chapter_listbox.select_clear(0, tk.END)
+
     def start_translation(self):
         epub_title = self.epub_title_entry.get()
         author = self.author_entry.get()
         epub_filename = self.epub_filename_entry.get() + ".epub"
         output_dir = self.output_dir.get()
-        num_chapters = self.num_chapters_entry.get()
         cover_image = self.cover_image_path.get()
 
         if not epub_title or not author or not epub_filename or not output_dir:
             messagebox.showerror("Error", "Please fill in all fields.")
             return
 
-        if not num_chapters.isdigit() or int(num_chapters) <= 0:
-            messagebox.showerror("Error", "Please enter a valid number of chapters to translate.")
+        selected_indices = self.chapter_listbox.curselection()
+        if not selected_indices:
+            messagebox.showerror("Error", "Please select at least one chapter to translate.")
             return
 
-        num_chapters = min(int(num_chapters), len(self.chapter_urls))
+        selected_chapters = [(self.chapter_titles[i], self.chapter_urls[i]) for i in selected_indices]
 
         self.translate_button.config(state=tk.DISABLED)
+        self.progress = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate", style="TProgressbar")
+        self.progress.grid(row=3, column=0, columnspan=2, padx=10, pady=20)
         self.progress.config(value=0)
         self.update()
 
         chapters = []
 
-        for i, (url, title) in enumerate(tqdm(self.chapter_urls[:num_chapters], desc="Translating Chapters", unit="chapter")):
+        for i, (title, url) in enumerate(tqdm(selected_chapters, desc="Translating Chapters", unit="chapter")):
             try:
                 content = get_chapter_content(url)
                 if content:
@@ -166,7 +197,7 @@ class TranslatorApp(tk.Tk):
                     translated_content = translate_text(cleaned_content)
                     if translated_content:
                         chapters.append((title, translated_content))
-                self.progress.config(value=(i+1) * (100 // num_chapters))
+                self.progress.config(value=(i+1) * (100 // len(selected_chapters)))
                 self.update()
             except Exception as e:
                 logging.error("Error while translating chapter: %s", e)

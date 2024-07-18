@@ -190,10 +190,14 @@ def create_epub(title, author, chapters, output_dir, epub_filename, cover_image)
     book.set_language('en')
     book.add_author(author)
 
+    # Define the TOC
+    toc = []
+
     for i, (chapter_title, content) in enumerate(chapters):
         chapter = epub.EpubHtml(title=chapter_title, file_name=f'chap_{i+1}.xhtml', lang='en')
         chapter.content = f'<h1>{chapter_title}</h1>{content}'
         book.add_item(chapter)
+        toc.append(epub.Link(chapter.file_name, chapter.title, chapter_title))
 
     # Add the cover image
     if cover_image:
@@ -201,7 +205,8 @@ def create_epub(title, author, chapters, output_dir, epub_filename, cover_image)
             book.set_cover("cover.jpg", img_file.read())
 
     # Define Table of Contents
-    book.toc = (epub.Link(ch.file_name, ch.title, ch.title) for ch in book.items if isinstance(ch, epub.EpubHtml))
+    book.toc = tuple(toc)
+
     # Add default NCX and Nav files
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())

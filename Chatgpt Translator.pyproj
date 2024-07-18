@@ -38,6 +38,7 @@
   <ItemGroup>
     <Content Include=".env" />
     <Content Include=".gitignore" />
+    <Content Include="LICENSE.txt" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>

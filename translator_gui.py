@@ -11,8 +11,10 @@ load_dotenv()
 
 from scraper.novel_scraper import get_chapter_urls
 from scraper.chapter_parser import get_chapter_content
-from translator.gpt_translator import translate_text
+from translator.gpt_translator import translate_text, translate_chapters
 from utils.helpers import clean_text
+from epub.epub_reader import read_epub
+from epub.epub_generator import create_epub
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -86,9 +88,16 @@ class TranslatorApp(tk.Tk):
         self.grab_chapters_button = ttk.Button(frame, text="Grab Chapters", command=self.grab_chapters)
         self.grab_chapters_button.grid(row=6, column=0, columnspan=2, pady=10)
 
+        # EPUB Upload
+        ttk.Label(frame, text="Upload EPUB:", anchor="e").grid(row=7, column=0, padx=10, pady=10, sticky="e")
+        self.epub_upload_button = ttk.Button(frame, text="Browse...", command=self.upload_epub)
+        self.epub_upload_button.grid(row=7, column=1, padx=10, pady=10, sticky="w")
+        self.epub_upload_label = ttk.Label(frame, text="", anchor="w")
+        self.epub_upload_label.grid(row=7, column=1, padx=10, pady=10, sticky="e")
+
         # Chapters Count Label
         self.chapters_count_label = ttk.Label(frame, text="", font=("Helvetica", 10))
-        self.chapters_count_label.grid(row=7, column=0, columnspan=2, pady=10)
+        self.chapters_count_label.grid(row=8, column=0, columnspan=2, pady=10)
 
         # Chapter Selection Frame
         self.chapter_selection_frame = ttk.Frame(self, padding="10 10 10 10", style="TFrame")
@@ -126,6 +135,24 @@ class TranslatorApp(tk.Tk):
         file_selected = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
         if file_selected:
             self.cover_image_path.set(file_selected)
+
+    def upload_epub(self):
+        file_selected = filedialog.askopenfilename(filetypes=[("EPUB files", "*.epub")])
+        if file_selected:
+            self.epub_upload_label.config(text=os.path.basename(file_selected))
+            epub_data = read_epub(file_selected)
+            self.epub_title_entry.delete(0, tk.END)
+            self.epub_title_entry.insert(0, epub_data['title'])
+            self.author_entry.delete(0, tk.END)
+            self.author_entry.insert(0, epub_data['author'])
+            self.cover_image_path.set(file_selected)
+
+            self.selected_chapters = epub_data['chapters']
+            self.chapter_titles = [title for title, _ in epub_data['chapters']]
+            self.update_chapter_listbox()
+
+            if self.selected_chapters:
+                self.translate_button.config(state=tk.NORMAL)
 
     def grab_chapters(self):
         novel_url = self.novel_url_entry.get()
@@ -175,11 +202,14 @@ class TranslatorApp(tk.Tk):
             return
 
         selected_indices = self.chapter_listbox.curselection()
-        if not selected_indices:
+        if not selected_indices and not self.selected_chapters:
             messagebox.showerror("Error", "Please select at least one chapter to translate.")
             return
 
-        selected_chapters = [(self.chapter_titles[i], self.chapter_urls[i]) for i in selected_indices]
+        if self.selected_chapters:
+            selected_chapters = self.selected_chapters
+        else:
+            selected_chapters = [(self.chapter_titles[i], self.chapter_urls[i]) for i in selected_indices]
 
         self.translate_button.config(state=tk.DISABLED)
         self.progress = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate", style="TProgressbar")
@@ -189,9 +219,12 @@ class TranslatorApp(tk.Tk):
 
         chapters = []
 
-        for i, (title, url) in enumerate(tqdm(selected_chapters, desc="Translating Chapters", unit="chapter")):
+        for i, (title, url_or_content) in enumerate(tqdm(selected_chapters, desc="Translating Chapters", unit="chapter")):
             try:
-                content = get_chapter_content(url)
+                if url_or_content.startswith('http'):
+                    content = get_chapter_content(url_or_content)
+                else:
+                    content = url_or_content
                 if content:
                     cleaned_content = clean_text(content)
                     translated_content = translate_text(cleaned_content)
@@ -205,7 +238,8 @@ class TranslatorApp(tk.Tk):
 
         if chapters:
             try:
-                create_epub(epub_title, author, chapters, output_dir, epub_filename, cover_image)
+                toc = [epub.Link(f'chap_{i+1}.xhtml', chapter_title, chapter_title) for i, (chapter_title, _) in enumerate(chapters)]
+                create_epub(epub_title, author, chapters, output_dir, epub_filename, cover_image, toc)
                 messagebox.showinfo("Success", "EPUB file created successfully!")
             except Exception as e:
                 logging.error("Error while creating EPUB: %s", e)
@@ -214,44 +248,6 @@ class TranslatorApp(tk.Tk):
             messagebox.showerror("Error", "No chapters were processed successfully.")
 
         self.translate_button.config(state=tk.NORMAL)
-
-def create_epub(title, author, chapters, output_dir, epub_filename, cover_image):
-    book = epub.EpubBook()
-    book.set_title(title)
-    book.set_language('en')
-    book.add_author(author)
-
-    # Define the TOC
-    toc = []
-
-    for i, (chapter_title, content) in enumerate(chapters):
-        chapter = epub.EpubHtml(title=chapter_title, file_name=f'chap_{i+1}.xhtml', lang='en')
-        chapter.content = f'<h1>{chapter_title}</h1>{content}'
-        book.add_item(chapter)
-        toc.append(epub.Link(chapter.file_name, chapter.title, chapter_title))
-
-    # Add the cover image
-    if cover_image:
-        with open(cover_image, 'rb') as img_file:
-            book.set_cover("cover.jpg", img_file.read())
-
-    # Define Table of Contents
-    book.toc = tuple(toc)
-
-    # Add default NCX and Nav files
-    book.add_item(epub.EpubNcx())
-    book.add_item(epub.EpubNav())
-
-    # Define CSS style
-    style = 'BODY { font-family: Times, serif; } P { margin-bottom: 1em; }'
-    nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-    book.add_item(nav_css)
-
-    # Create the spine
-    book.spine = ['nav'] + [ch for ch in book.items if isinstance(ch, epub.EpubHtml)]
-
-    # Write to the file
-    epub.write_epub(os.path.join(output_dir, epub_filename), book, {})
 
 if __name__ == "__main__":
     app = TranslatorApp()

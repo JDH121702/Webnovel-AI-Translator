@@ -25,6 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="epub\epub_generator.py" />
+    <Compile Include="epub\epub_reader.py" />
     <Compile Include="tests\test_epub_generator.py" />
     <Compile Include="tests\test_scraper.py" />
     <Compile Include="tests\test_translator.py" />

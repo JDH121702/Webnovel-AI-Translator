@@ -1,6 +1,6 @@
 # Webnovel AI Translator
 
-This translator is a comprehensive tool specifically designed for translating webnovel chapters from Syosetu or other sources to English using OpenAI's GPT-3.5. It scrapes novel content, translates it using the OpenAI API, and generates an EPUB file for easy reading. Additionally, it supports uploading existing EPUB files in different languages, translating their contents, and preserving the original writing style and formatting.
+This translator is a comprehensive tool specifically designed for translating webnovel chapters from Syosetu to English using OpenAI's GPT-3.5. It scrapes novel content, translates it using the OpenAI API, and generates an EPUB file for easy reading. Additionally, it supports uploading existing EPUB files in different languages, translating their contents, and preserving the original writing style and formatting.
 
 ## Description
 
@@ -9,6 +9,8 @@ This project provides a complete solution for translating webnovel chapters:
 - **Translation**: Uses OpenAI's GPT-3.5 to translate the scraped content, preserving the original author's writing style and HTML formatting.
 - **EPUB Generation**: Compiles the translated content into an EPUB file.
 - **EPUB Upload and Translation**: Allows users to upload existing EPUB files, translates the content, and regenerates the EPUB file with preserved formatting and metadata.
+
+**Note:** Currently, this tool only works with Syosetu. However, future updates will enhance the scraping logic to support more websites.
 
 ## Installation
 

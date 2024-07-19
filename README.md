@@ -1,4 +1,4 @@
-# AI Syosetu Translator
+# Webnovel AI Translator
 
 This translator is a tool specifically designed for translating Syosetu webnovel chapters to English using OpenAI's GPT-3.5. It scrapes novel content, translates it using the OpenAI API, and generates an EPUB file for easy reading.
 

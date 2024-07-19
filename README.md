@@ -1,13 +1,14 @@
 # Webnovel AI Translator
 
-This translator is a tool specifically designed for translating Syosetu webnovel chapters to English using OpenAI's GPT-3.5. It scrapes novel content, translates it using the OpenAI API, and generates an EPUB file for easy reading.
+This translator is a comprehensive tool specifically designed for translating webnovel chapters from Syosetu or other sources to English using OpenAI's GPT-3.5. It scrapes novel content, translates it using the OpenAI API, and generates an EPUB file for easy reading. Additionally, it supports uploading existing EPUB files in different languages, translating their contents, and preserving the original writing style and formatting.
 
 ## Description
 
-This project provides a complete solution for translating Syosetu webnovel chapters:
+This project provides a complete solution for translating webnovel chapters:
 - **Scraping**: Retrieves chapter URLs and content from a specified novel on Syosetu.
-- **Translation**: Uses OpenAI's GPT-3.5 to translate the scraped content.
+- **Translation**: Uses OpenAI's GPT-3.5 to translate the scraped content, preserving the original author's writing style and HTML formatting.
 - **EPUB Generation**: Compiles the translated content into an EPUB file.
+- **EPUB Upload and Translation**: Allows users to upload existing EPUB files, translates the content, and regenerates the EPUB file with preserved formatting and metadata.
 
 ## Installation
 
@@ -41,21 +42,32 @@ This project provides a complete solution for translating Syosetu webnovel chapt
     python translator_gui.py
     ```
 
-2. **Enter the Novel URL**:
+2. **Enter the Novel URL** (For Scraping and Translation):
     - Provide the URL of the webnovel you want to translate from Syosetu.
 
-3. **Configure Translation**:
-    - Enter the title and filename for the EPUB output.
-    - Choose the number of chapters to translate.
+3. **Upload an EPUB File** (For EPUB Translation):
+    - Click the "Browse..." button next to "Upload EPUB" to select an EPUB file from your local machine.
 
-4. **Generate the EPUB**:
+4. **Configure Translation**:
+    - Enter the title, author, and filename for the EPUB output.
+    - Choose the output directory and optional cover image.
+    - If scraping, configure the number of chapters to translate.
+    - If uploading an EPUB, the chapters and metadata will be loaded automatically.
+
+5. **Generate the EPUB**:
     - Click on the appropriate buttons in the GUI to fetch chapters, translate, and generate the EPUB file.
+
+## Features
+
+- **Preserves Original Writing Style**: Translations aim to maintain the author's unique writing style.
+- **HTML Tag Preservation**: Ensures that HTML formatting is preserved in the translated content.
+- **Metadata Handling**: Automatically reads and includes metadata such as title, author, and cover image from uploaded EPUB files.
 
 ## Planned Updates:
 
-1. **Headers**: Headers for each new chapter.
-2. **Better Scraping so it can be used on any website**: Better scraping to be used more generally.
-3. **More Lanugages**: Support for translating to more languages.
+1. **Enhanced Chapter Headers**: Improved formatting for chapter headers.
+2. **Universal Scraping**: Extend scraping capabilities to work with more websites.
+3. **Multi-Language Support**: Support for translating to more languages.
 
 ## Contributing
 

@@ -22,81 +22,127 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 class TranslatorApp(tb.Window):
     def __init__(self):
-        super().__init__(themename="flatly")
+        # Use a more professional theme for a modern look
+        super().__init__(themename="cosmo")
 
         self.title("Webnovel Translator")
         self.geometry("900x880")  # Increased default window size by 10%
-        self.configure(bg="#F5F5F5")
+
+        # Apply a corporate style font across the application
+        self.option_add("*Font", "Segoe UI 11")
+
+        # Configure general style settings
+        self.style = tb.Style()
+        self.style.configure("TFrame", background="#FFFFFF")
+        self.style.configure("TLabel", background="#FFFFFF", font=("Segoe UI", 11))
+        self.style.configure("TButton", font=("Segoe UI", 11))
+        self.style.configure("TProgressbar", thickness=20)
+
+        self.configure(bg="#FFFFFF")
 
         self.chapter_urls = []
         self.chapter_titles = []
         self.selected_chapters = []
         self.cover_image_path = tk.StringVar()
+        self.status_var = tk.StringVar(value="Ready")
+        self.progress = None
+
+        self.create_menu()
         self.create_widgets()
 
+    def create_menu(self):
+        menubar = tk.Menu(self)
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Exit", command=self.destroy)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(
+            label="About",
+            command=lambda: messagebox.showinfo(
+                "About", "Webnovel Translator - powered by GPT"
+            ),
+        )
+        menubar.add_cascade(label="Help", menu=help_menu)
+
+        self.config(menu=menubar)
+
     def create_widgets(self):
-        frame = ttk.Frame(self, padding="20 20 20 20", style="TFrame")
-        frame.grid(row=0, column=0, sticky="nsew")
+        notebook = tb.Notebook(self, bootstyle="secondary")
+        notebook.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        details_frame = ttk.Frame(notebook, padding="20 20 20 20", style="TFrame")
+        chapters_frame = ttk.Frame(notebook, padding="10 10 10 10", style="TFrame")
+        notebook.add(details_frame, text="Details")
+        notebook.add(chapters_frame, text="Chapters")
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        frame.columnconfigure(0, weight=1)
-        frame.columnconfigure(1, weight=1)
-        frame.columnconfigure(2, weight=1)
+        details_frame.columnconfigure(0, weight=1)
+        details_frame.columnconfigure(1, weight=1)
+        details_frame.columnconfigure(2, weight=1)
 
         # Novel URL
-        ttk.Label(frame, text="Novel URL:", anchor="e").grid(row=0, column=0, padx=10, pady=10, sticky="e")
-        self.novel_url_entry = ttk.Entry(frame, width=50)
+        ttk.Label(details_frame, text="Novel URL:", anchor="e").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        self.novel_url_entry = ttk.Entry(details_frame, width=50)
         self.novel_url_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
         # EPUB Title
-        ttk.Label(frame, text="EPUB Title:", anchor="e").grid(row=1, column=0, padx=10, pady=10, sticky="e")
-        self.epub_title_entry = ttk.Entry(frame, width=50)
+        ttk.Label(details_frame, text="EPUB Title:", anchor="e").grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        self.epub_title_entry = ttk.Entry(details_frame, width=50)
         self.epub_title_entry.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
         # Author
-        ttk.Label(frame, text="Author:", anchor="e").grid(row=2, column=0, padx=10, pady=10, sticky="e")
-        self.author_entry = ttk.Entry(frame, width=50)
+        ttk.Label(details_frame, text="Author:", anchor="e").grid(row=2, column=0, padx=10, pady=10, sticky="e")
+        self.author_entry = ttk.Entry(details_frame, width=50)
         self.author_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
         # EPUB Filename
-        ttk.Label(frame, text="EPUB Filename:", anchor="e").grid(row=3, column=0, padx=10, pady=10, sticky="e")
-        self.epub_filename_entry = ttk.Entry(frame, width=50)
+        ttk.Label(details_frame, text="EPUB Filename:", anchor="e").grid(row=3, column=0, padx=10, pady=10, sticky="e")
+        self.epub_filename_entry = ttk.Entry(details_frame, width=50)
         self.epub_filename_entry.grid(row=3, column=1, padx=10, pady=10, sticky="w")
 
         # Output Directory
-        ttk.Label(frame, text="Output Directory:", anchor="e").grid(row=4, column=0, padx=10, pady=10, sticky="e")
-        self.output_dir_button = ttk.Button(frame, text="Browse...", command=self.browse_output_dir)
+        ttk.Label(details_frame, text="Output Directory:", anchor="e").grid(row=4, column=0, padx=10, pady=10, sticky="e")
+        self.output_dir_button = ttk.Button(details_frame, text="Browse...", command=self.browse_output_dir)
         self.output_dir_button.grid(row=4, column=1, padx=10, pady=10, sticky="w")
         self.output_dir = tk.StringVar()
-        self.output_dir_label = ttk.Label(frame, textvariable=self.output_dir, anchor="w")
+        self.output_dir_label = ttk.Label(details_frame, textvariable=self.output_dir, anchor="w")
         self.output_dir_label.grid(row=4, column=2, padx=10, pady=10, sticky="w")
 
         # Cover Image
-        ttk.Label(frame, text="Cover Image:", anchor="e").grid(row=5, column=0, padx=10, pady=10, sticky="e")
-        self.cover_image_button = ttk.Button(frame, text="Browse...", command=self.browse_cover_image)
+        ttk.Label(details_frame, text="Cover Image:", anchor="e").grid(row=5, column=0, padx=10, pady=10, sticky="e")
+        self.cover_image_button = ttk.Button(details_frame, text="Browse...", command=self.browse_cover_image)
         self.cover_image_button.grid(row=5, column=1, padx=10, pady=10, sticky="w")
-        self.cover_image_label = ttk.Label(frame, textvariable=self.cover_image_path, anchor="w")
+        self.cover_image_label = ttk.Label(details_frame, textvariable=self.cover_image_path, anchor="w")
         self.cover_image_label.grid(row=5, column=2, padx=10, pady=10, sticky="w")
 
         # EPUB Upload
-        ttk.Label(frame, text="Upload EPUB:", anchor="e").grid(row=6, column=0, padx=10, pady=10, sticky="e")
-        self.epub_upload_button = ttk.Button(frame, text="Browse...", command=self.upload_epub)
+        ttk.Label(details_frame, text="Upload EPUB:", anchor="e").grid(row=6, column=0, padx=10, pady=10, sticky="e")
+        self.epub_upload_button = ttk.Button(details_frame, text="Browse...", command=self.upload_epub)
         self.epub_upload_button.grid(row=6, column=1, padx=10, pady=10, sticky="w")
-        self.epub_upload_label = ttk.Label(frame, text="", anchor="w")
+        self.epub_upload_label = ttk.Label(details_frame, text="", anchor="w")
         self.epub_upload_label.grid(row=6, column=2, padx=10, pady=10, sticky="w")
 
         # Chapters Count Label
-        self.chapters_count_label = ttk.Label(frame, text="", font=("Roboto", 10))
+        self.chapters_count_label = ttk.Label(details_frame, text="", font=("Roboto", 10))
         self.chapters_count_label.grid(row=7, column=0, columnspan=3, pady=20)
 
         # Chapter Selection Frame
-        self.chapter_selection_frame = ttk.Frame(self, padding="10 10 10 10", style="TFrame")
-        self.chapter_selection_frame.grid(row=1, column=0, columnspan=3, sticky="nsew")
+        self.chapter_selection_frame = ttk.Frame(chapters_frame, padding="10 10 10 10", style="TFrame")
+        self.chapter_selection_frame.grid(row=0, column=0, columnspan=3, sticky="nsew")
         self.chapter_selection_frame.columnconfigure(0, weight=1)
         self.chapter_selection_frame.rowconfigure(0, weight=1)
 
-        self.chapter_listbox = tk.Listbox(self.chapter_selection_frame, selectmode=tk.MULTIPLE, width=50, height=20, bg="#F5F5F5", fg="#000000", font=("Roboto", 14))
+        self.chapter_listbox = tk.Listbox(
+            self.chapter_selection_frame,
+            selectmode=tk.MULTIPLE,
+            width=50,
+            height=20,
+            bg="#FFFFFF",
+            fg="#000000",
+            font=("Segoe UI", 11)
+        )
         self.chapter_listbox.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
         chapter_listbox_scrollbar = ttk.Scrollbar(self.chapter_selection_frame, orient=tk.VERTICAL, command=self.chapter_listbox.yview)
@@ -117,7 +163,10 @@ class TranslatorApp(tb.Window):
         self.translate_button = ttk.Button(self, text="Translate", command=self.start_translation, state=tk.DISABLED)
         self.translate_button.grid(row=2, column=0, columnspan=3, pady=20)
 
-        for child in frame.winfo_children():
+        self.status_bar = ttk.Label(self, textvariable=self.status_var, anchor="w", style="TLabel")
+        self.status_bar.grid(row=3, column=0, sticky="ew", padx=10, pady=(0,10))
+
+        for child in details_frame.winfo_children():
             child.grid_configure(padx=10, pady=10)
 
     def browse_output_dir(self):
@@ -156,6 +205,7 @@ class TranslatorApp(tb.Window):
             return
 
         try:
+            self.status_var.set("Fetching chapters...")
             chapters = get_chapter_urls(novel_url)
             self.chapter_urls = [url for url, _ in chapters]
             self.chapter_titles = [title for _, title in chapters]
@@ -167,9 +217,11 @@ class TranslatorApp(tb.Window):
                 self.translate_button.config(state=tk.NORMAL)
             else:
                 self.translate_button.config(state=tk.DISABLED)
+            self.status_var.set(f"{chapters_count} chapters ready")
         except Exception as e:
             logging.error("Error while grabbing chapters: %s", e)
             messagebox.showerror("Error", f"An error occurred while grabbing chapters: {e}")
+            self.status_var.set("Error while grabbing chapters")
 
     def update_chapter_listbox(self):
         self.chapter_listbox.delete(0, tk.END)
@@ -207,8 +259,9 @@ class TranslatorApp(tb.Window):
 
         self.translate_button.config(state=tk.DISABLED)
         self.progress = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate", style="TProgressbar")
-        self.progress.grid(row=3, column=0, columnspan=3, padx=10, pady=20)
+        self.progress.grid(row=1, column=0, columnspan=3, padx=10, pady=20)
         self.progress.config(value=0)
+        self.status_var.set("Translating chapters...")
         self.update()
 
         chapters = []
@@ -224,7 +277,8 @@ class TranslatorApp(tb.Window):
                     translated_content = translate_text(cleaned_content)
                     if translated_content:
                         chapters.append((title, translated_content))
-                self.progress.config(value=(i+1) * (100 // len(selected_chapters)))
+                progress_value = (i + 1) / len(selected_chapters) * 100
+                self.progress.config(value=progress_value)
                 self.update()
             except Exception as e:
                 logging.error("Error while translating chapter: %s", e)
@@ -242,6 +296,9 @@ class TranslatorApp(tb.Window):
             messagebox.showerror("Error", "No chapters were processed successfully.")
 
         self.translate_button.config(state=tk.NORMAL)
+        self.status_var.set("Translation complete")
+        if self.progress:
+            self.progress.destroy()
 
 if __name__ == "__main__":
     app = TranslatorApp()

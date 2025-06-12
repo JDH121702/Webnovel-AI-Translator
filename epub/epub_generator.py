@@ -1,14 +1,17 @@
 from ebooklib import epub
 import os
 
-def create_epub(title, author, chapters, output_dir, epub_filename, cover_image, toc):
+def create_epub(title, author, chapters, output_dir, epub_filename, cover_image, toc=None):
     book = epub.EpubBook()
     book.set_title(title)
     book.set_language('en')
     book.add_author(author)
 
-    # Define the TOC
-    book.toc = tuple(epub.Link(chapter[1], chapter[0], chapter[0]) for chapter in chapters)
+    # Define the TOC ensuring filenames match the added chapters
+    if toc is None:
+        toc = [epub.Link(f'chap_{i+1}.xhtml', chapter_title, chapter_title)
+               for i, (chapter_title, _) in enumerate(chapters)]
+    book.toc = tuple(toc)
 
     # Add chapters to the book
     for i, (chapter_title, content) in enumerate(chapters):

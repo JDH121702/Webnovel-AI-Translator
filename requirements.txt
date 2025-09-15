@@ -3,4 +3,4 @@ beautifulsoup4
 openai
 ebooklib
 pytest
-dotenv
+python-dotenv

@@ -40,9 +40,14 @@ This project provides a complete solution for translating webnovel chapters:
 ## Usage
 
 1. **Run the Translator**:
-    ```sh
-    python translator_gui.py
-    ```
+    - Launch the graphical interface:
+      ```sh
+      python main.py gui
+      ```
+    - Or use the command line workflow to scrape, translate, and create an EPUB in one go:
+      ```sh
+      python main.py translate --title "My Novel" --author "Author" --novel-url "https://ncode.syosetu.com/n2163n/"
+      ```
 
 2. **Enter the Novel URL** (For Scraping and Translation):
     - Provide the URL of the webnovel you want to translate from Syosetu.

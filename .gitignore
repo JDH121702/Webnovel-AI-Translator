@@ -57,3 +57,6 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+# Python cache files
+__pycache__/
+*.pyc
